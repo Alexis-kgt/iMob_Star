@@ -1,5 +1,4 @@
 package com.example.alexis.starkr;
-package fr.istic.starproviderXY;
 
 import android.net.Uri;
 import android.provider.BaseColumns;
@@ -62,7 +61,7 @@ public interface StarContract {
 
     interface StopTimes {
         String CONTENT_PATH = "stoptime";
-        Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH)
+        Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
         // select stop_time.*, trip.*, calendar.*
         String CONTENT_TYPE =
                 "vnd.android.cursor.dir/vnd.fr.istic.starproviderXY.stoptime";
