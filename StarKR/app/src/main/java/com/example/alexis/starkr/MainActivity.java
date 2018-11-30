@@ -19,10 +19,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.alexis.starkr.database.CalendarDataSource;
 import com.example.alexis.starkr.database.DatabaseHelper;
+import com.example.alexis.starkr.model.*;
 import com.opencsv.CSVReader;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -143,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
             while ((ze = zis.getNextEntry()) != null)
             {
-                /*filename = ze.getName();
+                filename = ze.getName();
 
                 // Need to create directories if not exists, or
                 // it will generate an Exception...
@@ -160,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                     fout.write(buffer, 0, count);
                 }
 
-                fout.close();*/
+                fout.close();
                 zis.closeEntry();
             }
             zis.close();
@@ -170,8 +174,62 @@ public class MainActivity extends AppCompatActivity {
             Log.d("zippp",""+e.toString());
             return false;
         }
-
         return true;
+    }
+
+    public void fillBaseDeDonnees(){
+        DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+        dbHelper.recreateDatabase(dbHelper.getWritableDatabase());
+        ArrayList<Object> calendars = createObjectsForDb("calendar");
+        CalendarDataSource cds = new CalendarDataSource(this);
+        cds.fillTable(calendars);
+        ArrayList<Object> routes = createObjectsForDb("routes");
+        ArrayList<Object> stops = createObjectsForDb("stops");
+        ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
+        ArrayList<Object> trips = createObjectsForDb("trips");
+    }
+
+    public ArrayList<Object> createObjectsForDb(String object){
+        String fileName = object+".txt";
+        ArrayList<Object> objects = new ArrayList<>();
+        try {
+            FileInputStream objFile = new FileInputStream(Environment.getExternalStorageDirectory()+"/"+fileName);
+            InputStreamReader objReader = new InputStreamReader(objFile);
+            BufferedReader objBufferReader = new BufferedReader(objReader);
+            String strLine;
+            int cpt = 0;
+            while ((strLine = objBufferReader.readLine()) != null) {
+                if(cpt != 0){
+                    switch (object){
+                        case "calendar":
+                            objects.add(Calendar.createObject(strLine));
+                            break;
+                        case "routes":
+                            objects.add(Route.createObject(strLine));
+                            break;
+                        case "stops":
+                            objects.add(Stop.createObject(strLine));
+                            break;
+                        case "stop_times":
+                            objects.add(StopTime.createObject(strLine));
+                            break;
+                        case "trips":
+                            objects.add(Trip.createObject(strLine));
+                            break;
+                    }
+                }
+                cpt++;
+            }
+            objFile.close();
+        }
+        catch (FileNotFoundException objError) {
+            Toast.makeText(this, "Fichier non trouvé\n"+objError.toString(), Toast.LENGTH_LONG).show();
+        }
+        catch (IOException objError) {
+            Toast.makeText(this, "Erreur\n"+objError.toString(), Toast.LENGTH_LONG).show();
+        }
+        Log.d("fileContent",objects.size()+"");
+        return objects;
     }
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {
@@ -287,8 +345,7 @@ public class MainActivity extends AppCompatActivity {
                 if(fileType == "zip"){
                     unzip();
                     Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
-                    DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
-                    SQLiteDatabase db = dbHelper.getReadableDatabase();
+                    fillBaseDeDonnees();
                 }
             }
         }

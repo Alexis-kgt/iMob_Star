@@ -109,4 +109,52 @@ public class Stop {
     public void setWheelchair_boarding(String wheelchair_boarding) {
         this.wheelchair_boarding = wheelchair_boarding;
     }
+
+    public static Stop createObject(String str){
+        int cpt = 1;
+        Stop st = new Stop();
+        for(String s : str.split(",")){
+            s = s.substring(1,s.length()-1);
+            switch (cpt){
+                case 1:
+                    st.setStop_id(s);
+                    break;
+                case 2:
+                    st.setStop_code(s);
+                    break;
+                case 3:
+                    st.setStop_name(s);
+                    break;
+                case 4:
+                    st.setStop_desc(s);
+                    break;
+                case 5:
+                    st.setStop_lat(s);
+                    break;
+                case 6:
+                    st.setStop_lon(s);
+                    break;
+                case 7:
+                    st.setZone_id(s);
+                    break;
+                case 8:
+                    st.setStop_url(s);
+                    break;
+                case 9:
+                    st.setLocation_type(s);
+                    break;
+                case 10:
+                    st.setParent_station(s);
+                    break;
+                case 11:
+                    st.setStop_timezone(s);
+                    break;
+                case 12:
+                    st.setWheelchair_boarding(s);
+                    break;
+            }
+            cpt++;
+        }
+        return st;
+    }
 }

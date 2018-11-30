@@ -82,4 +82,43 @@ public class Trip {
     public void setBikes_allowed(String bikes_allowed) {
         this.bikes_allowed = bikes_allowed;
     }
+
+    public static Trip createObject(String str){
+        int cpt = 1;
+        Trip t = new Trip();
+        for(String s : str.split(",")){
+            s = s.substring(1,s.length()-1);
+            switch (cpt){
+                case 1:
+                    t.setRoute_id(s);
+                    break;
+                case 2:
+                    t.setService_id(s);
+                    break;
+                case 3:
+                    t.setTrip_id(s);
+                    break;
+                case 4:
+                    t.setTrip_headsign(s);
+                    break;
+                case 5:
+                    t.setTrip_short_name(s);
+                    break;
+                case 6:
+                    t.setDirection_id(s);
+                    break;
+                case 7:
+                    t.setBlock_id(s);
+                    break;
+                case 8:
+                    t.setWheelchair_accessible(s);
+                    break;
+                case 9:
+                    t.setBikes_allowed(s);
+                    break;
+            }
+            cpt++;
+        }
+        return t;
+    }
 }

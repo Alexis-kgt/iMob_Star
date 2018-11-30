@@ -91,4 +91,46 @@ public class Route {
     public void setRoute_sort_order(String route_sort_order) {
         this.route_sort_order = route_sort_order;
     }
+
+    public static Route createObject(String str){
+        int cpt = 1;
+        Route r = new Route();
+        for(String s : str.split(",")){
+            s = s.substring(1,s.length()-1);
+            switch (cpt){
+                case 1:
+                    r.setRoute_id(s);
+                    break;
+                case 2:
+                    r.setAgency_id(s);
+                    break;
+                case 3:
+                    r.setRoute_short_name(s);
+                    break;
+                case 4:
+                    r.setRoute_long_name(s);
+                    break;
+                case 5:
+                    r.setRoute_desc(s);
+                    break;
+                case 6:
+                    r.setRoute_type(s);
+                    break;
+                case 7:
+                    r.setRoute_url(s);
+                    break;
+                case 8:
+                    r.setRoute_color(s);
+                    break;
+                case 9:
+                    r.setRoute_text_color(s);
+                    break;
+                case 10:
+                    r.setRoute_sort_order(s);
+                    break;
+            }
+            cpt++;
+        }
+        return r;
+    }
 }

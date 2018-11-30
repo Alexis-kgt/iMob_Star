@@ -82,4 +82,43 @@ public class StopTime {
     public void setShape_dist_traveled(String shape_dist_traveled) {
         this.shape_dist_traveled = shape_dist_traveled;
     }
+
+    public static StopTime createObject(String str){
+        int cpt = 1;
+        StopTime st = new StopTime();
+        for(String s : str.split(",")){
+            s = s.substring(1,s.length()-1);
+            switch (cpt){
+                case 1:
+                    st.setTrip_id(s);
+                    break;
+                case 2:
+                    st.setArrival_time(s);
+                    break;
+                case 3:
+                    st.setDeparture_time(s);
+                    break;
+                case 4:
+                    st.setStop_id(s);
+                    break;
+                case 5:
+                    st.setStop_sequence(s);
+                    break;
+                case 6:
+                    st.setStop_headsign(s);
+                    break;
+                case 7:
+                    st.setPickup_type(s);
+                    break;
+                case 8:
+                    st.setDrop_off_type(s);
+                    break;
+                case 9:
+                    st.setShape_dist_traveled(s);
+                    break;
+            }
+            cpt++;
+        }
+        return st;
+    }
 }

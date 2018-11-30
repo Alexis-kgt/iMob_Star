@@ -1,5 +1,7 @@
 package com.example.alexis.starkr.model;
 
+import android.util.Log;
+
 public class Calendar {
     private String service_id;
     private String monday;
@@ -90,5 +92,47 @@ public class Calendar {
 
     public void setEnd_date(String end_date) {
         this.end_date = end_date;
+    }
+
+    public static Calendar createObject(String str){
+        int cpt = 1;
+        Calendar c = new Calendar();
+        for(String s : str.split(",")){
+            s = s.substring(1,s.length()-1);
+            switch (cpt){
+                case 1:
+                    c.setService_id(s);
+                    break;
+                case 2:
+                    c.setMonday(s);
+                    break;
+                case 3:
+                    c.setTuesday(s);
+                    break;
+                case 4:
+                    c.setWednesday(s);
+                    break;
+                case 5:
+                    c.setThursday(s);
+                    break;
+                case 6:
+                    c.setFriday(s);
+                    break;
+                case 7:
+                    c.setSaturday(s);
+                    break;
+                case 8:
+                    c.setSunday(s);
+                    break;
+                case 9:
+                    c.setStart_date(s);
+                    break;
+                case 10:
+                    c.setEnd_date(s);
+                    break;
+            }
+            cpt++;
+        }
+        return c;
     }
 }

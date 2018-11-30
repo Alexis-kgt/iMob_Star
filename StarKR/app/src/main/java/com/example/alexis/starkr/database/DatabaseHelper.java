@@ -165,4 +165,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_TRIPS);
         onCreate(db);
     }
+
+    public void recreateDatabase(SQLiteDatabase db){
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CALENDAR);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ROUTES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_STOP_TIMES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_STOPS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_TRIPS);
+        onCreate(db);
+    }
 }
