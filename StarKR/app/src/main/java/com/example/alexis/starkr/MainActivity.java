@@ -1,10 +1,13 @@
 package com.example.alexis.starkr;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -16,6 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.alexis.starkr.database.DatabaseHelper;
 import com.opencsv.CSVReader;
 
 import java.io.BufferedInputStream;
@@ -55,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
 // instantiate it within the onCreate method
         mProgressDialog = new ProgressDialog(MainActivity.this);
-        mProgressDialog.setMessage("A message");
+        mProgressDialog.setMessage("Téléchargement de la base de données");
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
@@ -86,22 +90,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    public void walkdir(File dir) {
-        File listFile[] = dir.listFiles();
 
-        if (listFile != null) {
-            for (int i = 0; i < listFile.length; i++) {
-
-                if (listFile[i].isDirectory()) {// if its a directory need to get the files under that directory
-                    walkdir(listFile[i]);
-                } else {// add path of  files to your arraylist for later use
-
-                    //Do what ever u want
-                    Log.d("filePath",listFile[i].getAbsolutePath());
-                }
-            }
-        }
-    }
     @Override
     protected void onStart(){
         super.onStart();
@@ -154,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
             while ((ze = zis.getNextEntry()) != null)
             {
-                filename = ze.getName();
+                /*filename = ze.getName();
 
                 // Need to create directories if not exists, or
                 // it will generate an Exception...
@@ -171,10 +160,9 @@ public class MainActivity extends AppCompatActivity {
                     fout.write(buffer, 0, count);
                 }
 
-                fout.close();
+                fout.close();*/
                 zis.closeEntry();
             }
-
             zis.close();
         }
         catch(IOException e)
@@ -297,19 +285,11 @@ public class MainActivity extends AppCompatActivity {
 
             else{
                 if(fileType == "zip"){
-                    Toast.makeText(context,"File downloaded", Toast.LENGTH_LONG).show();
-                    boolean unziped;
-                    unziped = unzip();
-                    Log.d("zippp",unziped+"");
-
-
-                    File dir= android.os.Environment.getExternalStorageDirectory();
-
-                    walkdir(dir);
-
-
+                    unzip();
+                    Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
+                    DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+                    SQLiteDatabase db = dbHelper.getReadableDatabase();
                 }
-
             }
         }
     }
