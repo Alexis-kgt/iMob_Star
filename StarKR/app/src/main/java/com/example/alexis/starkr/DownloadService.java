@@ -1,4 +1,4 @@
-package com.example.alexis.starkr;
+/*package com.example.alexis.starkr;
 
 import android.app.IntentService;
 import android.content.Intent;
@@ -56,4 +56,4 @@ public class DownloadService extends IntentService {
         resultData.putInt("progress" ,100);
         receiver.send(UPDATE_PROGRESS, resultData);
     }
-}
+}*/
