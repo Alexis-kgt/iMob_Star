@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 
 import com.example.alexis.starkr.database.CalendarDataSource;
 import com.example.alexis.starkr.database.DatabaseHelper;
+import com.example.alexis.starkr.database.RouteDataSource;
 import com.example.alexis.starkr.model.*;
 import com.opencsv.CSVReader;
 
@@ -42,6 +44,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import static android.app.NotificationChannel.DEFAULT_CHANNEL_ID;
 
 public class MainActivity extends AppCompatActivity {
     ProgressDialog mProgressDialog;
@@ -68,10 +72,11 @@ public class MainActivity extends AppCompatActivity {
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
 
-        HashMap<String,String> csvFileOld = this.readCsvFile();
-        Log.d("oldCsvFile",csvFileOld.get("ID"));
+        HashMap<String, String> csvFileOld = this.readCsvFile();
+        if(csvFileOld.keySet().size() > 0)
+            Log.d("oldCsvFile", csvFileOld.get("ID"));
 // execute this when the downloader must be fired
-        final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this,"csv");
+        final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
         downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true");
 
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
@@ -81,18 +86,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        HashMap<String,String> csvFileNew = this.readCsvFile();
-        Log.d("newCsvFile",csvFileNew.get("ID"));
+        /*
+        while(!downloadReussi()) {
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this, DEFAULT_CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("Star App")
+                    .setContentText("un nouveau fichier est disponible")
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        }*/
 
-        final DownloadTask downloadTaskZip = new DownloadTask(MainActivity.this, "zip");
-        downloadTaskZip.execute(csvFileNew.get("URL"));
-
-        mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                downloadTaskZip.cancel(true);
-            }
-        });
     }
 
     @Override
@@ -106,6 +108,26 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.READ_EXTERNAL_STORAGE};
         ActivityCompat.requestPermissions(this, permissions,1);
 
+    }
+
+    public void readCsv(){
+        HashMap<String, String> csvFileNew = this.readCsvFile();
+        Log.d("newCsvFile", csvFileNew.get("ID"));
+
+        final DownloadTask downloadTaskZip = new DownloadTask(MainActivity.this, "zip");
+        downloadTaskZip.execute(csvFileNew.get("URL"));
+
+        mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                downloadTaskZip.cancel(true);
+            }
+        });
+    }
+
+    public boolean downloadReussi() {
+
+        return true;
     }
 
     public boolean permissionOk(){
@@ -123,9 +145,11 @@ public class MainActivity extends AppCompatActivity {
             String [] line = reader.readNext();
             String [] keys = line[0].split(";");
             line = reader.readNext();
-            String [] values = line[0].split(";");
-            for(int i = 0; i < 8; i++){
-                keyToValue.put(keys[i],values[i]);
+            if(line != null){
+                String [] values = line[0].split(";");
+                for(int i = 0; i < 8; i++){
+                    keyToValue.put(keys[i],values[i]);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -184,9 +208,18 @@ public class MainActivity extends AppCompatActivity {
         CalendarDataSource cds = new CalendarDataSource(this);
         cds.fillTable(calendars);
         ArrayList<Object> routes = createObjectsForDb("routes");
+        RouteDataSource rds = new RouteDataSource(this);
+        rds.fillTable(routes);
         ArrayList<Object> stops = createObjectsForDb("stops");
         ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
         ArrayList<Object> trips = createObjectsForDb("trips");
+
+        /*SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM ROUTES WHERE ROUTE_ID  LIKE '%242%'",null);
+        if(c.moveToFirst()){
+            Log.d("resultSQL",c.getString(3));
+        }
+        */
     }
 
     public ArrayList<Object> createObjectsForDb(String object){
@@ -199,6 +232,9 @@ public class MainActivity extends AppCompatActivity {
             String strLine;
             int cpt = 0;
             while ((strLine = objBufferReader.readLine()) != null) {
+                if(strLine.contains("'")){
+                    strLine = strLine.replace("'"," ");
+                }
                 if(cpt != 0){
                     switch (object){
                         case "calendar":
@@ -230,6 +266,15 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("fileContent",objects.size()+"");
         return objects;
+    }
+
+    private class LoadTask extends AsyncTask<String, Integer, String> {
+
+
+        @Override
+        protected String doInBackground(String... strings) {
+            return null;
+        }
     }
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {
@@ -342,12 +387,19 @@ public class MainActivity extends AppCompatActivity {
             }
 
             else{
-                if(fileType == "zip"){
+                if(fileType == "csv"){
+                    readCsv();
+                }
+                else if(fileType == "zip"){
                     unzip();
                     Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
                     fillBaseDeDonnees();
                 }
             }
         }
+
+
     }
+
+
 }

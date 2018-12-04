@@ -3,6 +3,12 @@ package com.example.alexis.starkr.database;
 import android.content.Context;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
+
+import com.example.alexis.starkr.model.Calendar;
+import com.example.alexis.starkr.model.Route;
+
+import java.util.ArrayList;
 
 public class RouteDataSource {
 
@@ -31,5 +37,32 @@ public class RouteDataSource {
 
     public void close() {
         dbHelper.close();
+    }
+
+    public void fillTable(ArrayList<Object> routes){
+        this.open();
+        String insertCommand = "insert into "+DatabaseHelper.TABLE_ROUTES+" (";
+        int cpt = 1;
+        for(String col : allColumns){
+            if(cpt < allColumns.length){
+                insertCommand += col+", ";
+            }else{
+                insertCommand += col+")";
+            }
+            cpt++;
+        }
+        insertCommand += " values ";
+        cpt = 1;
+        for(Object o : routes){
+            Route r = Route.class.cast(o);
+            if(cpt < routes.size())
+                insertCommand += "('"+r.getRoute_id()+"','"+r.getAgency_id()+"','"+r.getRoute_short_name()+"','"+r.getRoute_long_name()+"','"+r.getRoute_desc()+"','"+r.getRoute_type()+"','"+r.getRoute_url()+"','"+r.getRoute_color()+"','"+r.getRoute_text_color()+"','"+r.getRoute_sort_order()+"'),";
+            else
+                insertCommand += "('"+r.getRoute_id()+"','"+r.getAgency_id()+"','"+r.getRoute_short_name()+"','"+r.getRoute_long_name()+"','"+r.getRoute_desc()+"','"+r.getRoute_type()+"','"+r.getRoute_url()+"','"+r.getRoute_color()+"','"+r.getRoute_text_color()+"','"+r.getRoute_sort_order()+"');";            cpt++;
+        }
+        Log.d("insertcommand",insertCommand);
+        database.execSQL(insertCommand);
+        this.close();
+        return;
     }
 }
