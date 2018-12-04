@@ -59,8 +59,10 @@ public class StopDataSource {
             if(cpt < stops.size())
                 insertCommand += "('"+s.getStop_id()+"','"+s.getStop_code()+"','"+s.getStop_name()+"','"+s.getStop_desc()+"','"+s.getStop_lat()+"','"+s.getStop_lon()+"','"+s.getStop_id()+"','"+s.getStop_url()+"','"+s.getLocation_type()+"','"+s.getParent_station()+"','"+s.getStop_timezone()+"','"+s.getWheelchair_boarding()+"'),";
             else
-                insertCommand += "('"+s.getStop_id()+"','"+s.getStop_code()+"','"+s.getStop_name()+"','"+s.getStop_desc()+"','"+s.getStop_lat()+"','"+s.getStop_lon()+"','"+s.getStop_id()+"','"+s.getStop_url()+"','"+s.getLocation_type()+"','"+s.getParent_station()+"','"+s.getStop_timezone()+"','"+s.getWheelchair_boarding()+"');";        }
-        Log.d("insertcommand",insertCommand);
+                insertCommand += "('"+s.getStop_id()+"','"+s.getStop_code()+"','"+s.getStop_name()+"','"+s.getStop_desc()+"','"+s.getStop_lat()+"','"+s.getStop_lon()+"','"+s.getStop_id()+"','"+s.getStop_url()+"','"+s.getLocation_type()+"','"+s.getParent_station()+"','"+s.getStop_timezone()+"','"+s.getWheelchair_boarding()+"');";
+            cpt++;
+        }
+        Log.d("insertcommandstop",insertCommand);
         database.execSQL(insertCommand);
         this.close();
         return;

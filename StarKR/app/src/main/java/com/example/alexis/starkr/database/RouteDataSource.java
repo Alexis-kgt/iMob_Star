@@ -60,7 +60,7 @@ public class RouteDataSource {
             else
                 insertCommand += "('"+r.getRoute_id()+"','"+r.getAgency_id()+"','"+r.getRoute_short_name()+"','"+r.getRoute_long_name()+"','"+r.getRoute_desc()+"','"+r.getRoute_type()+"','"+r.getRoute_url()+"','"+r.getRoute_color()+"','"+r.getRoute_text_color()+"','"+r.getRoute_sort_order()+"');";            cpt++;
         }
-        Log.d("insertcommand",insertCommand);
+        Log.d("insertcommandrou",insertCommand);
         database.execSQL(insertCommand);
         this.close();
         return;

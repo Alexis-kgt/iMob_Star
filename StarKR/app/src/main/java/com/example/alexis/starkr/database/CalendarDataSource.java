@@ -3,6 +3,7 @@ package com.example.alexis.starkr.database;
 import android.content.Context;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.example.alexis.starkr.model.Calendar;
 
@@ -57,6 +58,7 @@ public class CalendarDataSource {
                 insertCommand += "('"+c.getService_id()+"','"+c.getMonday()+"','"+c.getTuesday()+"','"+c.getWednesday()+"','"+c.getThursday()+"','"+c.getFriday()+"','"+c.getSaturday()+"','"+c.getSunday()+"','"+c.getStart_date()+"','"+c.getEnd_date()+"');";
             cpt++;
         }
+        Log.d("insertcommandcal",insertCommand);
         database.execSQL(insertCommand);
         this.close();
         return;

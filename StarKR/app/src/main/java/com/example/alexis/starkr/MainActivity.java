@@ -23,6 +23,9 @@ import android.widget.Toast;
 import com.example.alexis.starkr.database.CalendarDataSource;
 import com.example.alexis.starkr.database.DatabaseHelper;
 import com.example.alexis.starkr.database.RouteDataSource;
+import com.example.alexis.starkr.database.StopDataSource;
+import com.example.alexis.starkr.database.StopTimeDataSource;
+import com.example.alexis.starkr.database.TripDataSource;
 import com.example.alexis.starkr.model.*;
 import com.opencsv.CSVReader;
 
@@ -211,8 +214,14 @@ public class MainActivity extends AppCompatActivity {
         RouteDataSource rds = new RouteDataSource(this);
         rds.fillTable(routes);
         ArrayList<Object> stops = createObjectsForDb("stops");
+        StopDataSource sds = new StopDataSource(this);
+        sds.fillTable(stops);
         ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
+        StopTimeDataSource stds = new StopTimeDataSource(this);
+        stds.fillTable(stopTimes);
         ArrayList<Object> trips = createObjectsForDb("trips");
+        TripDataSource tds = new TripDataSource(this);
+        tds.fillTable(trips);
 
         /*SQLiteDatabase db = dbHelper.getReadableDatabase();
         Cursor c = db.rawQuery("SELECT * FROM ROUTES WHERE ROUTE_ID  LIKE '%242%'",null);
@@ -255,6 +264,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 cpt++;
+            }
+            if(object == "stop_times"){
+                Log.d("insertcommandcpt",cpt+"");
             }
             objFile.close();
         }

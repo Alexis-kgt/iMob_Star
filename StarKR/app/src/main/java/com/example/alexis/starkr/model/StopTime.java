@@ -84,7 +84,7 @@ public class StopTime {
     }
 
     public static StopTime createObject(String str){
-        int cpt = 1;
+        int cpt = 0;
         StopTime st = new StopTime();
         for(String s : str.split(",")){
             s = s.substring(1,s.length()-1);
