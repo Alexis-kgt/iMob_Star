@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -15,9 +16,20 @@ import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.example.alexis.starkr.database.CalendarDataSource;
@@ -28,6 +40,8 @@ import com.example.alexis.starkr.database.StopTimeDataSource;
 import com.example.alexis.starkr.database.TripDataSource;
 import com.example.alexis.starkr.model.*;
 import com.opencsv.CSVReader;
+
+import org.w3c.dom.Text;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -75,6 +89,16 @@ public class MainActivity extends AppCompatActivity {
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
 
+        TextView time = findViewById(R.id.timeView);
+        TextView date = findViewById(R.id.dateView);
+        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)+1;
+        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
+        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
+        time.setText(heure + ":"+minutes);
+        date.setText(jour+"/"+mois+"/"+annee);
+
         HashMap<String, String> csvFileOld = this.readCsvFile();
         if(csvFileOld.keySet().size() > 0)
             Log.d("oldCsvFile", csvFileOld.get("ID"));
@@ -87,6 +111,20 @@ public class MainActivity extends AppCompatActivity {
             public void onCancel(DialogInterface dialog) {
                 downloadTaskCsv.cancel(true);
             }
+        });
+
+        Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
+        lignesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                populateDirectionsSpinner();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+
+            }
+
         });
 
         /*
@@ -111,6 +149,20 @@ public class MainActivity extends AppCompatActivity {
                 Manifest.permission.READ_EXTERNAL_STORAGE};
         ActivityCompat.requestPermissions(this, permissions,1);
 
+    }
+
+    public void populateDirectionsSpinner() {
+        Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
+        String ligne = ((TextView) lignesSpinner.getSelectedView()).getText().toString();
+        String ligne2 = ligne.split(":")[1];
+        String direction1 = ligne2.split("<>")[0];
+        String direction2 = ligne2.split("<>")[ligne2.split("<>").length-1];
+
+        final String[] directions = new String[2];
+        directions[0] = direction1;
+        directions[1] = direction2;
+        Spinner directionsSpinner = findViewById(R.id.directionsSpinner);
+        directionsSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,directions));
     }
 
     public void readCsv(){
@@ -158,77 +210,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         return keyToValue;
-    }
-
-    public boolean unzip(){
-        InputStream is;
-        ZipInputStream zis;
-        try
-        {
-            String filename;
-            is = new FileInputStream(Environment.getExternalStorageDirectory()+"/bdd.zip");
-            zis = new ZipInputStream(new BufferedInputStream(is));
-            ZipEntry ze;
-            byte[] buffer = new byte[1024];
-            int count;
-
-            while ((ze = zis.getNextEntry()) != null)
-            {
-                filename = ze.getName();
-
-                // Need to create directories if not exists, or
-                // it will generate an Exception...
-                if (ze.isDirectory()) {
-                    File fmd = new File(Environment.getExternalStorageDirectory() + "/" + filename);
-                    fmd.mkdirs();
-                    continue;
-                }
-
-                FileOutputStream fout = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + filename);
-
-                while ((count = zis.read(buffer)) != -1)
-                {
-                    fout.write(buffer, 0, count);
-                }
-
-                fout.close();
-                zis.closeEntry();
-            }
-            zis.close();
-        }
-        catch(IOException e)
-        {
-            Log.d("zippp",""+e.toString());
-            return false;
-        }
-        return true;
-    }
-
-    public void fillBaseDeDonnees(){
-        DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
-        dbHelper.recreateDatabase(dbHelper.getWritableDatabase());
-        ArrayList<Object> calendars = createObjectsForDb("calendar");
-        CalendarDataSource cds = new CalendarDataSource(this);
-        cds.fillTable(calendars);
-        ArrayList<Object> routes = createObjectsForDb("routes");
-        RouteDataSource rds = new RouteDataSource(this);
-        rds.fillTable(routes);
-        ArrayList<Object> stops = createObjectsForDb("stops");
-        StopDataSource sds = new StopDataSource(this);
-        sds.fillTable(stops);
-        ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
-        StopTimeDataSource stds = new StopTimeDataSource(this);
-        stds.fillTable(stopTimes);
-        ArrayList<Object> trips = createObjectsForDb("trips");
-        TripDataSource tds = new TripDataSource(this);
-        tds.fillTable(trips);
-
-        /*SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM ROUTES WHERE ROUTE_ID  LIKE '%242%'",null);
-        if(c.moveToFirst()){
-            Log.d("resultSQL",c.getString(3));
-        }
-        */
     }
 
     public ArrayList<Object> createObjectsForDb(String object){
@@ -280,12 +261,279 @@ public class MainActivity extends AppCompatActivity {
         return objects;
     }
 
+    /**
+     * Créer une boite de dialogue pour renseigner l'heure
+     */
+    public void createDialogTimePicker(View v){
+        LayoutInflater li = LayoutInflater.from(MainActivity.this);
+        View promptsView = li.inflate(R.layout.time_picker, null);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+        alertDialogBuilder.setView(promptsView);
+        final TextView timeView = findViewById(R.id.timeView);
+        int heure = Integer.parseInt(timeView.getText().toString().split(":")[0]);
+        int minutes = Integer.parseInt(timeView.getText().toString().split(":")[1]);
+        final TimePicker tp = promptsView.findViewById(R.id.timePicker);
+        tp.setHour(heure);
+        tp.setMinute(minutes);
+        alertDialogBuilder
+                .setCancelable(false)
+                //Valider l'étiquette
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                timeView.setText(tp.getHour()+":" +tp.getMinute());
+                            }
+                        })
+                //L'arc n'a pas d'étiquette
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                dialog.cancel();
+                            }
+                        });
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+    /**
+     * Créer une boite de dialogue pour renseigner la date
+     */
+    public void createDialogDatePicker(View v){
+        LayoutInflater li = LayoutInflater.from(MainActivity.this);
+        View promptsView = li.inflate(R.layout.date_picker, null);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+        alertDialogBuilder.setView(promptsView);
+        final TextView dateView = findViewById(R.id.dateView);
+        int jour = Integer.parseInt(dateView.getText().toString().split("/")[0]);
+        int mois = Integer.parseInt(dateView.getText().toString().split("/")[1]);
+        int annee = Integer.parseInt(dateView.getText().toString().split("/")[2]);
+        final DatePicker dp = promptsView.findViewById(R.id.datePicker);
+        dp.updateDate(annee,mois-1,jour);
+        alertDialogBuilder
+                .setCancelable(false)
+                //Valider l'étiquette
+                .setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                dateView.setText(dp.getDayOfMonth()+"/"+(dp.getMonth()+1)+"/"+dp.getYear());
+                            }
+                        })
+                //L'arc n'a pas d'étiquette
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                dialog.cancel();
+                            }
+                        });
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
     private class LoadTask extends AsyncTask<String, Integer, String> {
 
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        public LoadTask(Context context) {
+            this.context = context;
+        }
+        @Override
+        protected String doInBackground(String... params) {
+            DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+            dbHelper.recreateDatabase(dbHelper.getWritableDatabase());
+            ArrayList<Object> calendars = createObjectsForDb("calendar");
+            CalendarDataSource cds = new CalendarDataSource(MainActivity.this);
+            cds.fillTable(calendars);
+            publishProgress(33);
+            ArrayList<Object> routes = createObjectsForDb("routes");
+            RouteDataSource rds = new RouteDataSource(MainActivity.this);
+            rds.fillTable(routes);
+            publishProgress(66);
+            ArrayList<Object> stops = createObjectsForDb("stops");
+            StopDataSource sds = new StopDataSource(MainActivity.this);
+            sds.fillTable(stops);
+            publishProgress(100);
+            /*ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
+            StopTimeDataSource stds = new StopTimeDataSource(this);
+            stds.fillTable(stopTimes);
+            ArrayList<Object> trips = createObjectsForDb("trips");
+            TripDataSource tds = new TripDataSource(this);
+            tds.fillTable(trips);*/
+
+            /*SQLiteDatabase db = dbHelper.getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT * FROM ROUTES WHERE ROUTE_ID  LIKE '%242%'",null);
+            if(c.moveToFirst()){
+                Log.d("resultSQL",c.getString(3));
+            }
+            */
+            return null;
+        }
 
         @Override
-        protected String doInBackground(String... strings) {
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
+            mWakeLock.acquire();
+            mProgressDialog.show();
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            // if we get here, length is known, now set indeterminate to false
+            mProgressDialog.setIndeterminate(false);
+            mProgressDialog.setMax(100);
+            mProgressDialog.setProgress(progress[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+            mProgressDialog.dismiss();
+            if (result != null){
+                Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
+            }else{
+                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
+                Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
+                DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+                SQLiteDatabase db = dbHelper.getReadableDatabase();
+                Cursor c = db.rawQuery("SELECT * FROM ROUTES",null);
+                ArrayList<String> lignes = new ArrayList();
+                if(c.moveToFirst()){
+                    do {
+                        lignes.add(c.getString(2) + " : "+ c.getString(3)+"_____"+c.getString(7)+"_____"+c.getString(8));
+                    } while(c.moveToNext());
+                }
+                final String[] lignesArray = new String[lignes.size()];
+                int cpt = 0;
+                for(String l : lignes){
+                    lignesArray[cpt] = l;
+                    cpt++;
+                }
+
+                ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,lignesArray){
+
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        // Cast the spinner collapsed item (non-popup item) as a text view
+                        TextView tv = (TextView) super.getView(position, convertView, parent);
+
+                        // Set the text color of spinner item
+                        tv.setText(lignesArray[position].split("_____")[0]);
+                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+
+                        // Return the view
+                        return tv;
+                    }
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent){
+                        View v = convertView;
+                        if (v == null) {
+                            Context mContext = this.getContext();
+                            LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                            v = vi.inflate(R.layout.ligne_item_spinner, null);
+                        }
+
+                        TextView tv = (TextView) v.findViewById(R.id.ligneItem);
+                        tv.setText(lignesArray[position].split("_____")[0]);
+                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+                        return v;
+                    }
+                });
+            }
+        }
+    }
+
+    private class UnzipTask extends AsyncTask<String, Integer, String> {
+
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        public UnzipTask(Context context) {
+            this.context = context;
+        }
+        @Override
+        protected String doInBackground(String... params) {
+            InputStream is;
+            ZipInputStream zis;
+            try
+            {
+                String filename;
+                is = new FileInputStream(Environment.getExternalStorageDirectory()+"/bdd.zip");
+                zis = new ZipInputStream(new BufferedInputStream(is));
+                ZipEntry ze;
+                byte[] buffer = new byte[1024];
+                int count, cpt = 1;
+
+                while ((ze = zis.getNextEntry()) != null)
+                {
+                    filename = ze.getName();
+
+                    // Need to create directories if not exists, or
+                    // it will generate an Exception...
+                    if (ze.isDirectory()) {
+                        File fmd = new File(Environment.getExternalStorageDirectory() + "/" + filename);
+                        fmd.mkdirs();
+                        continue;
+                    }
+
+                    FileOutputStream fout = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + filename);
+
+                    while ((count = zis.read(buffer)) != -1)
+                    {
+                        fout.write(buffer, 0, count);
+                    }
+
+                    fout.close();
+                    zis.closeEntry();
+                    publishProgress(cpt*(100/11));
+                    cpt++;
+                }
+                zis.close();
+            }
+            catch(IOException e)
+            {
+                Log.d("zippp",""+e.toString());
+            }
             return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
+            mWakeLock.acquire();
+            mProgressDialog.show();
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            // if we get here, length is known, now set indeterminate to false
+            mProgressDialog.setIndeterminate(false);
+            mProgressDialog.setMax(100);
+            mProgressDialog.setProgress(progress[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+            mProgressDialog.dismiss();
+            if (result != null){
+                Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
+            }else{
+                LoadTask lt = new LoadTask(MainActivity.this);
+                mProgressDialog.setMessage("Insertion des données en base");
+                lt.execute();
+                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -403,9 +651,10 @@ public class MainActivity extends AppCompatActivity {
                     readCsv();
                 }
                 else if(fileType == "zip"){
-                    unzip();
+                    UnzipTask ut = new UnzipTask(MainActivity.this);
+                    mProgressDialog.setMessage("Décompression des données");
+                    ut.execute();
                     Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
-                    fillBaseDeDonnees();
                 }
             }
         }

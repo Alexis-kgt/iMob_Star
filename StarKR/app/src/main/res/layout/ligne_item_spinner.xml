@@ -3,4 +3,7 @@
     android:id="@+id/ligneItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:marginTop="10dp"
+    android:marginStart="10dp"
+    android:marginEnd="10dp"
     android:padding="10px" />
