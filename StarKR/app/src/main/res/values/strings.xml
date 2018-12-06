@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">StarKR</string>
+    <string name="heure">Heure</string>
+    <string name="date">Date</string>
+    <string name="ligne">Date</string>
+    <string name="directions">Directions</string>
 </resources>
