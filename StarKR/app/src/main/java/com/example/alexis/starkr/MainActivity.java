@@ -2,6 +2,8 @@ package com.example.alexis.starkr;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,6 +17,7 @@ import android.os.Environment;
 import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -56,7 +59,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -67,6 +74,8 @@ import static android.app.NotificationChannel.DEFAULT_CHANNEL_ID;
 public class MainActivity extends AppCompatActivity {
     ProgressDialog mProgressDialog;
     boolean zipDownloaded;
+    String CHANNEL_ID = "com.example.alexis.starkr.model";
+
 
     public void setZipDownloaded(boolean zipDownloaded) {
         this.zipDownloaded = zipDownloaded;
@@ -79,10 +88,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        createNotificationChannel();
         setContentView(R.layout.activity_main);
         zipDownloaded = false;
 
-// instantiate it within the onCreate method
+        // instantiate it within the onCreate method
         mProgressDialog = new ProgressDialog(MainActivity.this);
         mProgressDialog.setMessage("Téléchargement de la base de données");
         mProgressDialog.setIndeterminate(true);
@@ -100,9 +110,25 @@ public class MainActivity extends AppCompatActivity {
         date.setText(jour+"/"+mois+"/"+annee);
 
         HashMap<String, String> csvFileOld = this.readCsvFile();
-        if(csvFileOld.keySet().size() > 0)
-            Log.d("oldCsvFile", csvFileOld.get("ID"));
-// execute this when the downloader must be fired
+
+        //replace lines to trigger the notification
+        String dateString = "2018-12-01";
+        //String dateString = csvFileOld.get("Fin de validité");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date convertedDate = new Date();
+        try {
+            convertedDate = dateFormat.parse(dateString);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        if (csvFileOld.keySet().size() > 0) {
+            if (convertedDate.before(new Date())) {
+                sendNotification();
+            }
+        }
+
+        // execute this when the downloader must be fired
         final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
         downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true");
 
@@ -337,6 +363,7 @@ public class MainActivity extends AppCompatActivity {
         public LoadTask(Context context) {
             this.context = context;
         }
+
         @Override
         protected String doInBackground(String... params) {
             DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
@@ -428,6 +455,7 @@ public class MainActivity extends AppCompatActivity {
                         // Return the view
                         return tv;
                     }
+
                     @Override
                     public View getDropDownView(int position, View convertView, ViewGroup parent){
                         View v = convertView;
@@ -456,6 +484,7 @@ public class MainActivity extends AppCompatActivity {
         public UnzipTask(Context context) {
             this.context = context;
         }
+
         @Override
         protected String doInBackground(String... params) {
             InputStream is;
@@ -660,6 +689,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+    }
+
+    public void sendNotification() {
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setContentTitle("New CSV available")
+                .setContentText("click to download")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        int notificationId = 0;
+        notificationManager.notify(notificationId++, mBuilder.build());
+
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "channel name";
+            String description = "channel description";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 
 
