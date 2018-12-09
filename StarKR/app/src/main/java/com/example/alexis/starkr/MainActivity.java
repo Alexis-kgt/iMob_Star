@@ -111,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
 
         HashMap<String, String> csvFileOld = this.readCsvFile();
 
+
+        /*
         //replace lines to trigger the notification
         String dateString = "2018-12-01";
         //String dateString = csvFileOld.get("Fin de validité");
@@ -127,6 +129,8 @@ public class MainActivity extends AppCompatActivity {
                 sendNotification();
             }
         }
+*/
+
 
         // execute this when the downloader must be fired
         final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
