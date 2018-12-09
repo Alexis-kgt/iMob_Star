@@ -135,12 +135,7 @@ public class MainActivity extends AppCompatActivity {
         if (csvFileOld.keySet().size() > 0) {
             oldCsvId = csvFileOld.get("ID");
         }
-<<<<<<< HEAD
-*/
-
-
-=======
->>>>>>> parent of 62f5a60... Revert "Suppression des demandes de permissions et notifications"
+        
         // execute this when the downloader must be fired
         final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
         downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true",oldCsvId);
