@@ -76,7 +76,6 @@ public class MainActivity extends AppCompatActivity {
     boolean zipDownloaded;
     String CHANNEL_ID = "com.example.alexis.starkr.model";
 
-
     public void setZipDownloaded(boolean zipDownloaded) {
         this.zipDownloaded = zipDownloaded;
     }
@@ -106,13 +105,16 @@ public class MainActivity extends AppCompatActivity {
         int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
         int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
         int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
-        time.setText(heure + ":"+minutes);
+        if(minutes < 10)
+            time.setText(heure + ":0"+minutes);
+        else
+            time.setText(heure + ":"+minutes);
         date.setText(jour+"/"+mois+"/"+annee);
 
         HashMap<String, String> csvFileOld = this.readCsvFile();
 
         //replace lines to trigger the notification
-        String dateString = "2018-12-01";
+        /*String dateString = "2018-12-01";
         //String dateString = csvFileOld.get("Fin de validité");
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date convertedDate = new Date();
@@ -126,11 +128,14 @@ public class MainActivity extends AppCompatActivity {
             if (convertedDate.before(new Date())) {
                 sendNotification();
             }
+        }*/
+        String oldCsvId = "";
+        if (csvFileOld.keySet().size() > 0) {
+            oldCsvId = csvFileOld.get("ID");
         }
-
         // execute this when the downloader must be fired
         final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
-        downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true");
+        downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true",oldCsvId);
 
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
@@ -164,19 +169,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onStart(){
-        super.onStart();
-
-        String[] permissions = new String[] {
-                Manifest.permission.WAKE_LOCK,
-                Manifest.permission.INTERNET,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_EXTERNAL_STORAGE};
-        ActivityCompat.requestPermissions(this, permissions,1);
-
-    }
-
     public void populateDirectionsSpinner() {
         Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
         String ligne = ((TextView) lignesSpinner.getSelectedView()).getText().toString();
@@ -191,12 +183,10 @@ public class MainActivity extends AppCompatActivity {
         directionsSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,directions));
     }
 
-    public void readCsv(){
+    public void readCsv(String oldCsvId){
         HashMap<String, String> csvFileNew = this.readCsvFile();
-        Log.d("newCsvFile", csvFileNew.get("ID"));
-
         final DownloadTask downloadTaskZip = new DownloadTask(MainActivity.this, "zip");
-        downloadTaskZip.execute(csvFileNew.get("URL"));
+        downloadTaskZip.execute(csvFileNew.get("URL"),oldCsvId,csvFileNew.get("ID"));
 
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
@@ -211,18 +201,11 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    public boolean permissionOk(){
-        return checkSelfPermission(Manifest.permission.WAKE_LOCK) == PackageManager.PERMISSION_GRANTED &&
-                checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED &&
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-                checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-    }
-
     public HashMap<String,String> readCsvFile(){
         CSVReader reader = null;
         HashMap<String,String> keyToValue = new HashMap<String,String>();
         try {
-            reader = new CSVReader(new FileReader(Environment.getExternalStorageDirectory()+"/json.csv"));
+            reader = new CSVReader(new FileReader(MainActivity.this.getFilesDir()+"/json.csv"));
             String [] line = reader.readNext();
             String [] keys = line[0].split(";");
             line = reader.readNext();
@@ -242,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
         String fileName = object+".txt";
         ArrayList<Object> objects = new ArrayList<>();
         try {
-            FileInputStream objFile = new FileInputStream(Environment.getExternalStorageDirectory()+"/"+fileName);
+            FileInputStream objFile = new FileInputStream(MainActivity.this.getFilesDir()+"/"+fileName);
             InputStreamReader objReader = new InputStreamReader(objFile);
             BufferedReader objBufferReader = new BufferedReader(objReader);
             String strLine;
@@ -355,6 +338,57 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
+    public void populateLignesSpinner(){
+        Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
+        DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM ROUTES",null);
+        ArrayList<String> lignes = new ArrayList();
+        if(c.moveToFirst()){
+            do {
+                lignes.add(c.getString(2) + " : "+ c.getString(3)+"_____"+c.getString(7)+"_____"+c.getString(8));
+            } while(c.moveToNext());
+        }
+        final String[] lignesArray = new String[lignes.size()];
+        int cpt = 0;
+        for(String l : lignes){
+            lignesArray[cpt] = l;
+            cpt++;
+        }
+
+        ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,lignesArray){
+
+            public View getView(int position, View convertView, ViewGroup parent) {
+                // Cast the spinner collapsed item (non-popup item) as a text view
+                TextView tv = (TextView) super.getView(position, convertView, parent);
+
+                // Set the text color of spinner item
+                tv.setText(lignesArray[position].split("_____")[0]);
+                tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+                tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+
+                // Return the view
+                return tv;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent){
+                View v = convertView;
+                if (v == null) {
+                    Context mContext = this.getContext();
+                    LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    v = vi.inflate(R.layout.ligne_item_spinner, null);
+                }
+
+                TextView tv = (TextView) v.findViewById(R.id.ligneItem);
+                tv.setText(lignesArray[position].split("_____")[0]);
+                tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+                tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+                return v;
+            }
+        });
+    }
+
     private class LoadTask extends AsyncTask<String, Integer, String> {
 
         private Context context;
@@ -424,54 +458,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
             }else{
                 Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
-                Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
-                DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
-                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor c = db.rawQuery("SELECT * FROM ROUTES",null);
-                ArrayList<String> lignes = new ArrayList();
-                if(c.moveToFirst()){
-                    do {
-                        lignes.add(c.getString(2) + " : "+ c.getString(3)+"_____"+c.getString(7)+"_____"+c.getString(8));
-                    } while(c.moveToNext());
-                }
-                final String[] lignesArray = new String[lignes.size()];
-                int cpt = 0;
-                for(String l : lignes){
-                    lignesArray[cpt] = l;
-                    cpt++;
-                }
-
-                ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,lignesArray){
-
-                    public View getView(int position, View convertView, ViewGroup parent) {
-                        // Cast the spinner collapsed item (non-popup item) as a text view
-                        TextView tv = (TextView) super.getView(position, convertView, parent);
-
-                        // Set the text color of spinner item
-                        tv.setText(lignesArray[position].split("_____")[0]);
-                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
-                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
-
-                        // Return the view
-                        return tv;
-                    }
-
-                    @Override
-                    public View getDropDownView(int position, View convertView, ViewGroup parent){
-                        View v = convertView;
-                        if (v == null) {
-                            Context mContext = this.getContext();
-                            LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                            v = vi.inflate(R.layout.ligne_item_spinner, null);
-                        }
-
-                        TextView tv = (TextView) v.findViewById(R.id.ligneItem);
-                        tv.setText(lignesArray[position].split("_____")[0]);
-                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
-                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
-                        return v;
-                    }
-                });
+                populateLignesSpinner();
             }
         }
     }
@@ -492,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
             try
             {
                 String filename;
-                is = new FileInputStream(Environment.getExternalStorageDirectory()+"/bdd.zip");
+                is = new FileInputStream(MainActivity.this.getFilesDir()+"/bdd.zip");
                 zis = new ZipInputStream(new BufferedInputStream(is));
                 ZipEntry ze;
                 byte[] buffer = new byte[1024];
@@ -505,12 +492,12 @@ public class MainActivity extends AppCompatActivity {
                     // Need to create directories if not exists, or
                     // it will generate an Exception...
                     if (ze.isDirectory()) {
-                        File fmd = new File(Environment.getExternalStorageDirectory() + "/" + filename);
+                        File fmd = new File(MainActivity.this.getFilesDir() + "/" + filename);
                         fmd.mkdirs();
                         continue;
                     }
 
-                    FileOutputStream fout = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + filename);
+                    FileOutputStream fout = new FileOutputStream(MainActivity.this.getFilesDir() + "/" + filename);
 
                     while ((count = zis.read(buffer)) != -1)
                     {
@@ -570,7 +557,7 @@ public class MainActivity extends AppCompatActivity {
 
         private Context context;
         private PowerManager.WakeLock mWakeLock;
-        private String fileType;
+        private String fileType, oldCsvId, newCsvId;
 
         public DownloadTask(Context context, String fileType) {
             this.fileType = fileType;
@@ -580,11 +567,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... sUrl) {
 
+            oldCsvId = sUrl[1];
+            if(fileType == "zip")
+                newCsvId = sUrl[2];
             InputStream input = null;
             OutputStream output = null;
             HttpURLConnection connection = null;
             try {
-                if(permissionOk()){
+                if(!oldCsvId.equals(newCsvId)){
                     URL url = new URL(sUrl[0]);
                     connection = (HttpURLConnection) url.openConnection();
                     connection.connect();
@@ -603,9 +593,9 @@ public class MainActivity extends AppCompatActivity {
                     // download the file
                     input = connection.getInputStream();
                     if(fileType == "csv")
-                        output = new FileOutputStream(Environment.getExternalStorageDirectory()+"/json.csv");
+                        output = new FileOutputStream(MainActivity.this.getFilesDir()+"/json.csv");
                     else if(fileType == "zip")
-                        output = new FileOutputStream(Environment.getExternalStorageDirectory()+"/bdd.zip");
+                        output = new FileOutputStream(MainActivity.this.getFilesDir()+"/bdd.zip");
 
                     byte data[] = new byte[4096];
                     long total = 0;
@@ -618,7 +608,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         total += count;
                         // publishing the progress....
-                        if(fileType == "zip"){
+                        if (fileType == "zip") {
                             if (fileLength > 0) // only if total length is known
                                 publishProgress((int) (total * 100 / fileLength));
                         }
@@ -677,13 +667,18 @@ public class MainActivity extends AppCompatActivity {
 
             else{
                 if(fileType == "csv"){
-                    readCsv();
+                    readCsv(oldCsvId);
                 }
                 else if(fileType == "zip"){
-                    UnzipTask ut = new UnzipTask(MainActivity.this);
-                    mProgressDialog.setMessage("Décompression des données");
-                    ut.execute();
-                    Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
+                    if(!oldCsvId.equals(newCsvId)){
+                        UnzipTask ut = new UnzipTask(MainActivity.this);
+                        mProgressDialog.setMessage("Décompression des données");
+                        ut.execute();
+                        Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
+                    }else{
+                        Toast.makeText(MainActivity.this,"Base de données à jour", Toast.LENGTH_LONG).show();
+                        populateLignesSpinner();
+                    }
                 }
             }
         }
