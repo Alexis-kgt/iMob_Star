@@ -1,14 +1,9 @@
 package com.example.alexis.starkr;
-
 import android.net.Uri;
 import android.provider.BaseColumns;
-
 public interface StarContract {
-
     String AUTHORITY = "fr.istic.starproviderXY";
-
     Uri AUTHORITY_URI = Uri.parse("content://" + AUTHORITY);
-
     interface BusRoutes {
         String CONTENT_PATH = "busroute";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
@@ -25,7 +20,6 @@ public interface StarContract {
             String TEXT_COLOR = "route_text_color";
         }
     }
-
     interface Trips {
         String CONTENT_PATH = "trip";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
@@ -42,7 +36,6 @@ public interface StarContract {
             String WHEELCHAIR_ACCESSIBLE = "wheelchair_accessible";
         }
     }
-
     interface Stops {
         String CONTENT_PATH = "stop";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
@@ -58,7 +51,6 @@ public interface StarContract {
             String WHEELCHAIR_BOARDING = "wheelchair_boarding";
         }
     }
-
     interface StopTimes {
         String CONTENT_PATH = "stoptime";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
@@ -75,7 +67,6 @@ public interface StarContract {
             String STOP_SEQUENCE = "stop_sequence";
         }
     }
-
     interface Calendar {
         String CONTENT_PATH = "calendar";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);
@@ -95,7 +86,6 @@ public interface StarContract {
             String END_DATE = "end_date";
         }
     }
-
     interface RouteDetails {
         String CONTENT_PATH = "routedetail";
         Uri CONTENT_URI = Uri.withAppendedPath(AUTHORITY_URI, CONTENT_PATH);

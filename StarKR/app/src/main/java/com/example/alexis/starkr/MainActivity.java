@@ -1,7 +1,6 @@
 package com.example.alexis.starkr;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.ProgressDialog;
@@ -13,38 +12,28 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.DatePicker;
-import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.example.alexis.starkr.database.CalendarDataSource;
-import com.example.alexis.starkr.database.DatabaseHelper;
-import com.example.alexis.starkr.database.RouteDataSource;
-import com.example.alexis.starkr.database.StopDataSource;
-import com.example.alexis.starkr.database.StopTimeDataSource;
-import com.example.alexis.starkr.database.TripDataSource;
+import com.example.alexis.starkr.database.*;
 import com.example.alexis.starkr.model.*;
 import com.opencsv.CSVReader;
-
-import org.w3c.dom.Text;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -59,37 +48,23 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.ParseException;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static android.app.NotificationChannel.DEFAULT_CHANNEL_ID;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DateFragment.OnDirectionSelectedListener, StopFragment.OnStopListFragmentInteractionListener, StopTimeFragment.OnStopTimeListFragmentInteractionListener, TripFragment.OnTripListFragmentInteractionListener {
+    private static final String TAG = "zzzzzz";
     ProgressDialog mProgressDialog;
-    boolean zipDownloaded;
     String CHANNEL_ID = "com.example.alexis.starkr.model";
 
-    public void setZipDownloaded(boolean zipDownloaded) {
-        this.zipDownloaded = zipDownloaded;
-    }
-
-    public boolean getZipDowloaded(){
-        return zipDownloaded;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         createNotificationChannel();
+
         setContentView(R.layout.activity_main);
-        zipDownloaded = false;
 
         // instantiate it within the onCreate method
         mProgressDialog = new ProgressDialog(MainActivity.this);
@@ -98,47 +73,50 @@ public class MainActivity extends AppCompatActivity {
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.setCancelable(true);
 
-        TextView time = findViewById(R.id.timeView);
-        TextView date = findViewById(R.id.dateView);
-        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)+1;
-        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
-        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
-        if(minutes < 10)
-            time.setText(heure + ":0"+minutes);
-        else
-            time.setText(heure + ":"+minutes);
-        date.setText(jour+"/"+mois+"/"+annee);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        DateFragment dateFragment = new DateFragment();
+        fragmentTransaction.add(R.id.dateFragment, dateFragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        fragmentTransaction.commit();
+
+//        TextView time = findViewById(R.id.timeView);
+//        TextView date = findViewById(R.id.dateView);
+//        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+//        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)+1;
+//        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
+//        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+//        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
+//        time.setText(heure + ":"+minutes);
+//        date.setText(jour+"/"+mois+"/"+annee);
 
         HashMap<String, String> csvFileOld = this.readCsvFile();
 
 
-        /*
-        //replace lines to trigger the notification
-        /*String dateString = "2018-12-01";
-        //String dateString = csvFileOld.get("Fin de validité");
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        Date convertedDate = new Date();
-        try {
-            convertedDate = dateFormat.parse(dateString);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+//
+//        //replace lines to trigger the notification
+//        String dateString = "2018-12-01";
+//        //String dateString = csvFileOld.get("Fin de validité");
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//        Date convertedDate = new Date();
+//        try {
+//            convertedDate = dateFormat.parse(dateString);
+//        } catch (ParseException e) {
+//            e.printStackTrace();
+//        }
+//
+//        if (csvFileOld.keySet().size() > 0) {
+//            if (convertedDate.before(new Date())) {
+//                sendNotification();
+//            }
+//        }
 
-        if (csvFileOld.keySet().size() > 0) {
-            if (convertedDate.before(new Date())) {
-                sendNotification();
-            }
-        }*/
-        String oldCsvId = "";
-        if (csvFileOld.keySet().size() > 0) {
-            oldCsvId = csvFileOld.get("ID");
-        }
-        
+
         // execute this when the downloader must be fired
         final DownloadTask downloadTaskCsv = new DownloadTask(MainActivity.this, "csv");
-        downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true",oldCsvId);
+        downloadTaskCsv.execute("https://data.explore.star.fr/explore/dataset/tco-busmetro-horaires-gtfs-versions-td/download/?format=csv&timezone=Europe/Berlin&use_labels_for_header=true");
 
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
@@ -147,49 +125,63 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
-        lignesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                populateDirectionsSpinner();
-            }
+//        Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
+//        lignesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+//                populateDirectionsSpinner();
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> parentView) {
+//
+//            }
+//
+//        });
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parentView) {
-
-            }
-
-        });
-
-        /*
-        while(!downloadReussi()) {
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this, DEFAULT_CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle("Star App")
-                    .setContentText("un nouveau fichier est disponible")
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        }*/
+//        Spinner directionsSpinner = findViewById(R.id.directionsSpinner);
+//        directionsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+//                //TODO récupérer les horaires du bus;
+//                Log.d(TAG, "onItemSelected: pos " + position);
+//                Log.d(TAG, "onItemSelected: id " + id);
+//
+//                LoadTaskStopTimes ltst = new LoadTaskStopTimes(MainActivity.this);
+//                mProgressDialog.setMessage("Insertion des données en base");
+//                ltst.execute();
+//                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
+//
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> parentView) {
+//
+//            }
+//
+//        });
 
     }
 
-    public void populateDirectionsSpinner() {
-        Spinner lignesSpinner = findViewById(R.id.lignesSpinner);
-        String ligne = ((TextView) lignesSpinner.getSelectedView()).getText().toString();
-        String ligne2 = ligne.split(":")[1];
-        String direction1 = ligne2.split("<>")[0];
-        String direction2 = ligne2.split("<>")[ligne2.split("<>").length-1];
+    @Override
+    protected void onStart() {
+        super.onStart();
 
-        final String[] directions = new String[2];
-        directions[0] = direction1;
-        directions[1] = direction2;
-        Spinner directionsSpinner = findViewById(R.id.directionsSpinner);
-        directionsSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,directions));
+        String[] permissions = new String[]{
+                Manifest.permission.WAKE_LOCK,
+                Manifest.permission.INTERNET,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE};
+        ActivityCompat.requestPermissions(this, permissions, 1);
+
     }
 
-    public void readCsv(String oldCsvId){
+    public void readCsv() {
         HashMap<String, String> csvFileNew = this.readCsvFile();
+        Log.d("newCsvFile", csvFileNew.get("ID"));
+
         final DownloadTask downloadTaskZip = new DownloadTask(MainActivity.this, "zip");
-        downloadTaskZip.execute(csvFileNew.get("URL"),oldCsvId,csvFileNew.get("ID"));
+        downloadTaskZip.execute(csvFileNew.get("URL"));
 
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
@@ -199,23 +191,25 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public boolean downloadReussi() {
-
-        return true;
+    public boolean permissionOk() {
+        return checkSelfPermission(Manifest.permission.WAKE_LOCK) == PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
-    public HashMap<String,String> readCsvFile(){
-        CSVReader reader = null;
-        HashMap<String,String> keyToValue = new HashMap<String,String>();
+    public HashMap<String, String> readCsvFile() {
+        CSVReader reader;
+        HashMap<String, String> keyToValue = new HashMap<String, String>();
         try {
-            reader = new CSVReader(new FileReader(MainActivity.this.getFilesDir()+"/json.csv"));
-            String [] line = reader.readNext();
-            String [] keys = line[0].split(";");
+            reader = new CSVReader(new FileReader(Environment.getExternalStorageDirectory() + "/json.csv"));
+            String[] line = reader.readNext();
+            String[] keys = line[0].split(";");
             line = reader.readNext();
-            if(line != null){
-                String [] values = line[0].split(";");
-                for(int i = 0; i < 8; i++){
-                    keyToValue.put(keys[i],values[i]);
+            if (line != null) {
+                String[] values = line[0].split(";");
+                for (int i = 0; i < 8; i++) {
+                    keyToValue.put(keys[i], values[i]);
                 }
             }
         } catch (IOException e) {
@@ -224,21 +218,21 @@ public class MainActivity extends AppCompatActivity {
         return keyToValue;
     }
 
-    public ArrayList<Object> createObjectsForDb(String object){
-        String fileName = object+".txt";
+    public ArrayList<Object> createObjectsForDb(String object) {
+        String fileName = object + ".txt";
         ArrayList<Object> objects = new ArrayList<>();
         try {
-            FileInputStream objFile = new FileInputStream(MainActivity.this.getFilesDir()+"/"+fileName);
+            FileInputStream objFile = new FileInputStream(Environment.getExternalStorageDirectory() + "/" + fileName);
             InputStreamReader objReader = new InputStreamReader(objFile);
             BufferedReader objBufferReader = new BufferedReader(objReader);
             String strLine;
             int cpt = 0;
             while ((strLine = objBufferReader.readLine()) != null) {
-                if(strLine.contains("'")){
-                    strLine = strLine.replace("'"," ");
+                if (strLine.contains("'")) {
+                    strLine = strLine.replace("'", " ");
                 }
-                if(cpt != 0){
-                    switch (object){
+                if (cpt != 0) {
+                    switch (object) {
                         case "calendar":
                             objects.add(Calendar.createObject(strLine));
                             break;
@@ -258,139 +252,19 @@ public class MainActivity extends AppCompatActivity {
                 }
                 cpt++;
             }
-            if(object == "stop_times"){
-                Log.d("insertcommandcpt",cpt+"");
+            if (object == "stop_times") {
+                Log.d("insertcommandcpt", cpt + "");
             }
             objFile.close();
+        } catch (FileNotFoundException objError) {
+            Toast.makeText(this, "Fichier non trouvé\n" + objError.toString(), Toast.LENGTH_LONG).show();
+        } catch (IOException objError) {
+            Toast.makeText(this, "Erreur\n" + objError.toString(), Toast.LENGTH_LONG).show();
         }
-        catch (FileNotFoundException objError) {
-            Toast.makeText(this, "Fichier non trouvé\n"+objError.toString(), Toast.LENGTH_LONG).show();
-        }
-        catch (IOException objError) {
-            Toast.makeText(this, "Erreur\n"+objError.toString(), Toast.LENGTH_LONG).show();
-        }
-        Log.d("fileContent",objects.size()+"");
+        Log.d("fileContent", objects.size() + "");
         return objects;
     }
 
-    /**
-     * Créer une boite de dialogue pour renseigner l'heure
-     */
-    public void createDialogTimePicker(View v){
-        LayoutInflater li = LayoutInflater.from(MainActivity.this);
-        View promptsView = li.inflate(R.layout.time_picker, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-        alertDialogBuilder.setView(promptsView);
-        final TextView timeView = findViewById(R.id.timeView);
-        int heure = Integer.parseInt(timeView.getText().toString().split(":")[0]);
-        int minutes = Integer.parseInt(timeView.getText().toString().split(":")[1]);
-        final TimePicker tp = promptsView.findViewById(R.id.timePicker);
-        tp.setHour(heure);
-        tp.setMinute(minutes);
-        alertDialogBuilder
-                .setCancelable(false)
-                //Valider l'étiquette
-                .setPositiveButton("OK",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                timeView.setText(tp.getHour()+":" +tp.getMinute());
-                            }
-                        })
-                //L'arc n'a pas d'étiquette
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                dialog.cancel();
-                            }
-                        });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
-
-    /**
-     * Créer une boite de dialogue pour renseigner la date
-     */
-    public void createDialogDatePicker(View v){
-        LayoutInflater li = LayoutInflater.from(MainActivity.this);
-        View promptsView = li.inflate(R.layout.date_picker, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-        alertDialogBuilder.setView(promptsView);
-        final TextView dateView = findViewById(R.id.dateView);
-        int jour = Integer.parseInt(dateView.getText().toString().split("/")[0]);
-        int mois = Integer.parseInt(dateView.getText().toString().split("/")[1]);
-        int annee = Integer.parseInt(dateView.getText().toString().split("/")[2]);
-        final DatePicker dp = promptsView.findViewById(R.id.datePicker);
-        dp.updateDate(annee,mois-1,jour);
-        alertDialogBuilder
-                .setCancelable(false)
-                //Valider l'étiquette
-                .setPositiveButton("OK",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                dateView.setText(dp.getDayOfMonth()+"/"+(dp.getMonth()+1)+"/"+dp.getYear());
-                            }
-                        })
-                //L'arc n'a pas d'étiquette
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                dialog.cancel();
-                            }
-                        });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }
-
-    public void populateLignesSpinner(){
-        Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
-        DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor c = db.rawQuery("SELECT * FROM ROUTES",null);
-        ArrayList<String> lignes = new ArrayList();
-        if(c.moveToFirst()){
-            do {
-                lignes.add(c.getString(2) + " : "+ c.getString(3)+"_____"+c.getString(7)+"_____"+c.getString(8));
-            } while(c.moveToNext());
-        }
-        final String[] lignesArray = new String[lignes.size()];
-        int cpt = 0;
-        for(String l : lignes){
-            lignesArray[cpt] = l;
-            cpt++;
-        }
-
-        ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.ligne_item_spinner,lignesArray){
-
-            public View getView(int position, View convertView, ViewGroup parent) {
-                // Cast the spinner collapsed item (non-popup item) as a text view
-                TextView tv = (TextView) super.getView(position, convertView, parent);
-
-                // Set the text color of spinner item
-                tv.setText(lignesArray[position].split("_____")[0]);
-                tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
-                tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
-
-                // Return the view
-                return tv;
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent){
-                View v = convertView;
-                if (v == null) {
-                    Context mContext = this.getContext();
-                    LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    v = vi.inflate(R.layout.ligne_item_spinner, null);
-                }
-
-                TextView tv = (TextView) v.findViewById(R.id.ligneItem);
-                tv.setText(lignesArray[position].split("_____")[0]);
-                tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
-                tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
-                return v;
-            }
-        });
-    }
 
     private class LoadTask extends AsyncTask<String, Integer, String> {
 
@@ -417,6 +291,9 @@ public class MainActivity extends AppCompatActivity {
             StopDataSource sds = new StopDataSource(MainActivity.this);
             sds.fillTable(stops);
             publishProgress(100);
+
+            //TODO charger ca avec un filtre quand la direction est sélectionnée
+            Log.d(TAG, "doInBackground: "+params.toString());
             /*ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
             StopTimeDataSource stds = new StopTimeDataSource(this);
             stds.fillTable(stopTimes);
@@ -457,14 +334,174 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             mWakeLock.release();
             mProgressDialog.dismiss();
-            if (result != null){
-                Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
-            }else{
-                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
-                populateLignesSpinner();
+            if (result != null) {
+                Toast.makeText(context, "Problème d'insertion des données", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Base de données remplie", Toast.LENGTH_LONG).show();
+                Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
+                DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+                SQLiteDatabase db = dbHelper.getReadableDatabase();
+                Cursor c = db.rawQuery("SELECT * FROM ROUTES", null);
+                ArrayList<String> lignes = new ArrayList();
+                if (c.moveToFirst()) {
+                    do {
+                        lignes.add(c.getString(2) + " : " + c.getString(3) + "_____" + c.getString(7) + "_____" + c.getString(8));
+                    } while (c.moveToNext());
+                }
+                final String[] lignesArray = new String[lignes.size()];
+                int cpt = 0;
+                for (String l : lignes) {
+                    lignesArray[cpt] = l;
+                    cpt++;
+                }
+
+                ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this, R.layout.ligne_item_spinner, lignesArray) {
+
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        // Cast the spinner collapsed item (non-popup item) as a text view
+                        TextView tv = (TextView) super.getView(position, convertView, parent);
+
+                        // Set the text color of spinner item
+                        tv.setText(lignesArray[position].split("_____")[0]);
+                        tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
+                        tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
+
+                        // Return the view
+                        return tv;
+                    }
+
+                    @Override
+                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                        View v = convertView;
+                        if (v == null) {
+                            Context mContext = this.getContext();
+                            LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                            v = vi.inflate(R.layout.ligne_item_spinner, null);
+                        }
+
+                        TextView tv = (TextView) v.findViewById(R.id.ligneItem);
+                        tv.setText(lignesArray[position].split("_____")[0]);
+                        tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
+                        tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
+                        return v;
+                    }
+                });
             }
         }
     }
+
+//    private class LoadTaskStopTimes extends AsyncTask<String, Integer, String> {
+//
+//        private Context context;
+//        private PowerManager.WakeLock mWakeLock;
+//
+//        public LoadTaskStopTimes(Context context) {
+//            this.context = context;
+//        }
+//
+//        @Override
+//        protected String doInBackground(String... params) {
+//
+//            ArrayList<Object> stopTimes = createObjectsForDb("stop_times");
+//            StopTimeDataSource stds = new StopTimeDataSource(MainActivity.this);
+//            stds.fillTable(stopTimes);
+//            publishProgress(50);
+//            ArrayList<Object> trips = createObjectsForDb("trips");
+//            TripDataSource tds = new TripDataSource(MainActivity.this);
+//            tds.fillTable(trips);
+//            publishProgress(100);
+//
+//            /*SQLiteDatabase db = dbHelper.getReadableDatabase();
+//            Cursor c = db.rawQuery("SELECT * FROM ROUTES WHERE ROUTE_ID  LIKE '%242%'",null);
+//            if(c.moveToFirst()){
+//                Log.d("resultSQL",c.getString(3));
+//            }
+//            */
+//            return null;
+//        }
+//
+//        @Override
+//        protected void onPreExecute() {
+//            super.onPreExecute();
+//            // take CPU lock to prevent CPU from going off if the user
+//            // presses the power button during download
+//            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+//            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
+//            mWakeLock.acquire();
+//            mProgressDialog.show();
+//        }
+//
+//        @Override
+//        protected void onProgressUpdate(Integer... progress) {
+//            super.onProgressUpdate(progress);
+//            // if we get here, length is known, now set indeterminate to false
+//            mProgressDialog.setIndeterminate(false);
+//            mProgressDialog.setMax(100);
+//            mProgressDialog.setProgress(progress[0]);
+//        }
+//
+//        @Override
+//        protected void onPostExecute(String result) {
+//            mWakeLock.release();
+//            mProgressDialog.dismiss();
+//            if (result != null){
+//                Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
+//            }else{
+//                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
+//                Log.d(TAG, "onPostExecute: "+ result.toString());
+//                DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
+//                SQLiteDatabase db = dbHelper.getReadableDatabase();
+//                Cursor c = db.rawQuery("SELECT * FROM ROUTES",null);
+//                ArrayList<String> lignes = new ArrayList();
+//                if(c.moveToFirst()){
+//                    do {
+//                        lignes.add(c.getString(2) + " : "+ c.getString(3)+"_____"+c.getString(7)+"_____"+c.getString(8));
+//                    } while(c.moveToNext());
+//                }
+//                final String[] lignesArray = new String[lignes.size()];
+//                int cpt = 0;
+//                for(String l : lignes){
+//                    lignesArray[cpt] = l;
+//                    cpt++;
+//                }
+//
+//                ScrollView scrollView = findViewById(R.id.scrollView);
+//
+//                scrollView.setAdapter(new ArrayAdapter<String>(MainActivity.this,R.layout.fragment_stoptime_list,lignesArray){
+//
+//                    public View getView(int position, View convertView, ViewGroup parent) {
+//                        // Cast the spinner collapsed item (non-popup item) as a text view
+//                        TextView tv = (TextView) super.getView(position, convertView, parent);
+//
+//                        // Set the text color of spinner item
+//                        tv.setText(lignesArray[position].split("_____")[0]);
+//                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+//                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+//
+//                        // Return the view
+//                        return tv;
+//                    }
+//
+//                    @Override
+//                    public View getDropDownView(int position, View convertView, ViewGroup parent){
+//                        View v = convertView;
+//                        if (v == null) {
+//                            Context mContext = this.getContext();
+//                            LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+//                            v = vi.inflate(R.layout.ligne_item_spinner, null);
+//                        }
+//
+//                        TextView tv = (TextView) v.findViewById(R.id.ligneItem);
+//                        tv.setText(lignesArray[position].split("_____")[0]);
+//                        tv.setBackgroundColor(Color.parseColor("#"+lignesArray[position].split("_____")[1]));
+//                        tv.setTextColor(Color.parseColor("#"+lignesArray[position].split("_____")[2]));
+//                        return v;
+//                    }
+//                });
+//
+//            }
+//        }
+//    }
 
     private class UnzipTask extends AsyncTask<String, Integer, String> {
 
@@ -479,44 +516,39 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... params) {
             InputStream is;
             ZipInputStream zis;
-            try
-            {
+            try {
                 String filename;
-                is = new FileInputStream(MainActivity.this.getFilesDir()+"/bdd.zip");
+                is = new FileInputStream(Environment.getExternalStorageDirectory() + "/bdd.zip");
                 zis = new ZipInputStream(new BufferedInputStream(is));
                 ZipEntry ze;
                 byte[] buffer = new byte[1024];
                 int count, cpt = 1;
 
-                while ((ze = zis.getNextEntry()) != null)
-                {
+                while ((ze = zis.getNextEntry()) != null) {
                     filename = ze.getName();
 
                     // Need to create directories if not exists, or
                     // it will generate an Exception...
                     if (ze.isDirectory()) {
-                        File fmd = new File(MainActivity.this.getFilesDir() + "/" + filename);
+                        File fmd = new File(Environment.getExternalStorageDirectory() + "/" + filename);
                         fmd.mkdirs();
                         continue;
                     }
 
-                    FileOutputStream fout = new FileOutputStream(MainActivity.this.getFilesDir() + "/" + filename);
+                    FileOutputStream fout = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + filename);
 
-                    while ((count = zis.read(buffer)) != -1)
-                    {
+                    while ((count = zis.read(buffer)) != -1) {
                         fout.write(buffer, 0, count);
                     }
 
                     fout.close();
                     zis.closeEntry();
-                    publishProgress(cpt*(100/11));
+                    publishProgress(cpt * (100 / 11));
                     cpt++;
                 }
                 zis.close();
-            }
-            catch(IOException e)
-            {
-                Log.d("zippp",""+e.toString());
+            } catch (IOException e) {
+                Log.d("zippp", "" + e.toString());
             }
             return null;
         }
@@ -545,13 +577,13 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             mWakeLock.release();
             mProgressDialog.dismiss();
-            if (result != null){
-                Toast.makeText(context,"Problème d'insertion des données", Toast.LENGTH_LONG).show();
-            }else{
+            if (result != null) {
+                Toast.makeText(context, "Problème d'insertion des données", Toast.LENGTH_LONG).show();
+            } else {
                 LoadTask lt = new LoadTask(MainActivity.this);
                 mProgressDialog.setMessage("Insertion des données en base");
                 lt.execute();
-                Toast.makeText(MainActivity.this,"Base de données remplie", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Base de données remplie", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -560,7 +592,7 @@ public class MainActivity extends AppCompatActivity {
 
         private Context context;
         private PowerManager.WakeLock mWakeLock;
-        private String fileType, oldCsvId, newCsvId;
+        private String fileType;
 
         public DownloadTask(Context context, String fileType) {
             this.fileType = fileType;
@@ -570,14 +602,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... sUrl) {
 
-            oldCsvId = sUrl[1];
-            if(fileType == "zip")
-                newCsvId = sUrl[2];
             InputStream input = null;
             OutputStream output = null;
             HttpURLConnection connection = null;
             try {
-                if(!oldCsvId.equals(newCsvId)){
+                if (permissionOk()) {
                     URL url = new URL(sUrl[0]);
                     connection = (HttpURLConnection) url.openConnection();
                     connection.connect();
@@ -595,10 +624,10 @@ public class MainActivity extends AppCompatActivity {
 
                     // download the file
                     input = connection.getInputStream();
-                    if(fileType == "csv")
-                        output = new FileOutputStream(MainActivity.this.getFilesDir()+"/json.csv");
-                    else if(fileType == "zip")
-                        output = new FileOutputStream(MainActivity.this.getFilesDir()+"/bdd.zip");
+                    if (fileType == "csv")
+                        output = new FileOutputStream(Environment.getExternalStorageDirectory() + "/json.csv");
+                    else if (fileType == "zip")
+                        output = new FileOutputStream(Environment.getExternalStorageDirectory() + "/bdd.zip");
 
                     byte data[] = new byte[4096];
                     long total = 0;
@@ -644,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
             mWakeLock.acquire();
-            if(fileType == "zip")
+            if (fileType == "zip")
                 mProgressDialog.show();
         }
 
@@ -652,7 +681,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onProgressUpdate(Integer... progress) {
             super.onProgressUpdate(progress);
             // if we get here, length is known, now set indeterminate to false
-            if(fileType == "zip"){
+            if (fileType == "zip") {
                 mProgressDialog.setIndeterminate(false);
                 mProgressDialog.setMax(100);
                 mProgressDialog.setProgress(progress[0]);
@@ -662,26 +691,18 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             mWakeLock.release();
-            if(fileType == "zip")
+            if (fileType == "zip")
                 mProgressDialog.dismiss();
-            if (result != null){
-                Toast.makeText(context,"Download error: "+result, Toast.LENGTH_LONG).show();
-            }
-
-            else{
-                if(fileType == "csv"){
-                    readCsv(oldCsvId);
-                }
-                else if(fileType == "zip"){
-                    if(!oldCsvId.equals(newCsvId)){
-                        UnzipTask ut = new UnzipTask(MainActivity.this);
-                        mProgressDialog.setMessage("Décompression des données");
-                        ut.execute();
-                        Toast.makeText(MainActivity.this,"Fichier décompressé", Toast.LENGTH_LONG).show();
-                    }else{
-                        Toast.makeText(MainActivity.this,"Base de données à jour", Toast.LENGTH_LONG).show();
-                        populateLignesSpinner();
-                    }
+            if (result != null) {
+                Toast.makeText(context, "Download error: " + result, Toast.LENGTH_LONG).show();
+            } else {
+                if (fileType == "csv") {
+                    readCsv();
+                } else if (fileType == "zip") {
+                    UnzipTask ut = new UnzipTask(MainActivity.this);
+                    mProgressDialog.setMessage("Décompression des données");
+                    ut.execute();
+                    Toast.makeText(MainActivity.this, "Fichier décompressé", Toast.LENGTH_LONG).show();
                 }
             }
         }
@@ -714,5 +735,44 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onAttachFragment(Fragment fragment) {
+        if (fragment instanceof DateFragment) {
+            DateFragment dateFragment = (DateFragment) fragment;
+            dateFragment.setOnDirectionSelectedListener(this);
+        }
+        if (fragment instanceof StopFragment) {
+            StopFragment stopFragment = (StopFragment) fragment;
+            stopFragment.setOnStopSelectedListener(this);
+        }
+
+    }
+
+    public void onDirectionSelected(int position) {
+        StopFragment stopFragment = StopFragment.newInstance(1);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.stopFragment, stopFragment);
+        fragmentTransaction.commit();
+    }
+
+    public void onStopListFragmentInteraction(Stop stop) {
+        StopTimeFragment stopTimeFragment = new StopTimeFragment();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.stopTimeFragment, stopTimeFragment);
+        fragmentTransaction.commit();
+    }
+
+    public void onStopTimeListFragmentInteraction(StopTime stopTime) {
+        StopTimeFragment stopTimeFragment = new StopTimeFragment();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.stopTimeFragment, stopTimeFragment);
+        fragmentTransaction.commit();
+    }
+
+    public void onTripListFragmentInteraction(Trip trip) {
+    }
 
 }
