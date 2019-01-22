@@ -58,6 +58,8 @@ public class MainActivity extends AppCompatActivity implements DateFragment.OnDi
     ProgressDialog mProgressDialog;
     String CHANNEL_ID = "com.example.alexis.starkr.model";
 
+    DateFragment dateFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,21 +78,37 @@ public class MainActivity extends AppCompatActivity implements DateFragment.OnDi
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
-        DateFragment dateFragment = new DateFragment();
+        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1;
+        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
+        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
+
+        String moisS, jourS, heureS, minutesS;
+        if(mois < 10)
+            moisS = "0"+mois;
+        else
+            moisS = mois+"";
+        if(jour < 10)
+            jourS = "0"+jour;
+        else
+            jourS = jour+"";
+        if(heure < 10)
+            heureS = "0"+heure;
+        else
+            heureS = heure+"";
+        if(minutes < 10)
+            minutesS = "0"+minutes;
+        else
+            minutesS = minutes+"";
+        ((TextView)findViewById(R.id.timeView)).setText(heureS + ":" + minutesS);
+        ((TextView)findViewById(R.id.dateView)).setText(jourS + "/" + moisS + "/" + annee);
+        dateFragment = new DateFragment();
         fragmentTransaction.add(R.id.dateFragment, dateFragment);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
         fragmentTransaction.commit();
 
-//        TextView time = findViewById(R.id.timeView);
-//        TextView date = findViewById(R.id.dateView);
-//        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-//        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)+1;
-//        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
-//        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-//        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
-//        time.setText(heure + ":"+minutes);
-//        date.setText(jour+"/"+mois+"/"+annee);
 
         HashMap<String, String> csvFileOld = this.readCsvFile();
 
@@ -189,6 +207,13 @@ public class MainActivity extends AppCompatActivity implements DateFragment.OnDi
                 downloadTaskZip.cancel(true);
             }
         });
+    }
+
+    public void refreshDateFragmentDate(String date){
+        ((TextView)findViewById(R.id.dateView)).setText(date);
+    }
+    public void refreshDateFragmentTime(String time){
+        ((TextView)findViewById(R.id.timeView)).setText(time);
     }
 
     public boolean permissionOk() {
@@ -338,54 +363,7 @@ public class MainActivity extends AppCompatActivity implements DateFragment.OnDi
                 Toast.makeText(context, "Problème d'insertion des données", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(MainActivity.this, "Base de données remplie", Toast.LENGTH_LONG).show();
-                Spinner ligneSpinner = findViewById(R.id.lignesSpinner);
-                DatabaseHelper dbHelper = new DatabaseHelper(MainActivity.this);
-                SQLiteDatabase db = dbHelper.getReadableDatabase();
-                Cursor c = db.rawQuery("SELECT * FROM ROUTES", null);
-                ArrayList<String> lignes = new ArrayList();
-                if (c.moveToFirst()) {
-                    do {
-                        lignes.add(c.getString(2) + " : " + c.getString(3) + "_____" + c.getString(7) + "_____" + c.getString(8));
-                    } while (c.moveToNext());
-                }
-                final String[] lignesArray = new String[lignes.size()];
-                int cpt = 0;
-                for (String l : lignes) {
-                    lignesArray[cpt] = l;
-                    cpt++;
-                }
-
-                ligneSpinner.setAdapter(new ArrayAdapter<String>(MainActivity.this, R.layout.ligne_item_spinner, lignesArray) {
-
-                    public View getView(int position, View convertView, ViewGroup parent) {
-                        // Cast the spinner collapsed item (non-popup item) as a text view
-                        TextView tv = (TextView) super.getView(position, convertView, parent);
-
-                        // Set the text color of spinner item
-                        tv.setText(lignesArray[position].split("_____")[0]);
-                        tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
-                        tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
-
-                        // Return the view
-                        return tv;
-                    }
-
-                    @Override
-                    public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                        View v = convertView;
-                        if (v == null) {
-                            Context mContext = this.getContext();
-                            LayoutInflater vi = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                            v = vi.inflate(R.layout.ligne_item_spinner, null);
-                        }
-
-                        TextView tv = (TextView) v.findViewById(R.id.ligneItem);
-                        tv.setText(lignesArray[position].split("_____")[0]);
-                        tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
-                        tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
-                        return v;
-                    }
-                });
+                dateFragment.setSpinnerContent();
             }
         }
     }

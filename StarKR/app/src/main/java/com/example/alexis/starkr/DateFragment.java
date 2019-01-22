@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -14,11 +17,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
+
+import com.example.alexis.starkr.database.DatabaseHelper;
+
+import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -28,6 +36,7 @@ import android.widget.TimePicker;
 public class DateFragment extends Fragment {
     private static final String ARG_COLUMN_COUNT = "column-count";
     private static final String TAG = "zzzzz";
+    TextView date, time;
     OnDirectionSelectedListener mCallback;
 
     public void setOnDirectionSelectedListener(Activity activity) {
@@ -36,6 +45,8 @@ public class DateFragment extends Fragment {
 
     // Container Activity must implement this interface
     public interface OnDirectionSelectedListener {
+        void refreshDateFragmentDate(String date);
+        void refreshDateFragmentTime(String time);
         void onDirectionSelected(int position);
     }
 
@@ -77,18 +88,12 @@ public class DateFragment extends Fragment {
         //Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_date, container, false);
 
-
-        TextView time = v.findViewById(R.id.timeView);
-        TextView date = v.findViewById(R.id.dateView);
-
-        int annee = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        int mois = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1;
-        int jour = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_MONTH);
-        int heure = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-        int minutes = java.util.Calendar.getInstance().get(java.util.Calendar.MINUTE);
-
-        time.setText(heure + ":" + minutes);
-        date.setText(jour + "/" + mois + "/" + annee);
+        time = v.findViewById(R.id.timeView);
+        date = v.findViewById(R.id.dateView);
+        Button dateBtn = v.findViewById(R.id.datePickerBtn);
+        Button timeBtn = v.findViewById(R.id.timePickerBtn);
+        timeBtn.setOnClickListener(timeClickListener);
+        dateBtn.setOnClickListener(dateClickListener);
 
         Spinner lignesSpinner = v.findViewById(R.id.lignesSpinner);
         lignesSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -151,18 +156,79 @@ public class DateFragment extends Fragment {
         directionsSpinner.setAdapter(new ArrayAdapter<String>(getContext(), R.layout.ligne_item_spinner, directions));
     }
 
+    private View.OnClickListener dateClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            createDialogDatePicker();
+        }
+    };
+    private View.OnClickListener timeClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            createDialogTimePicker();
+        }
+    };
+
+    public void setSpinnerContent(){
+        Spinner ligneSpinner = getActivity().findViewById(R.id.lignesSpinner);
+        DatabaseHelper dbHelper = new DatabaseHelper(getContext());
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM ROUTES", null);
+        ArrayList<String> lignes = new ArrayList();
+        if (c.moveToFirst()) {
+            do {
+                lignes.add(c.getString(2) + " : " + c.getString(3) + "_____" + c.getString(7) + "_____" + c.getString(8));
+            } while (c.moveToNext());
+        }
+        final String[] lignesArray = new String[lignes.size()];
+        int cpt = 0;
+        for (String l : lignes) {
+            lignesArray[cpt] = l;
+            cpt++;
+        }
+
+        ligneSpinner.setAdapter(new ArrayAdapter<String>(getContext(), R.layout.ligne_item_spinner, lignesArray) {
+
+            public View getView(int position, View convertView, ViewGroup parent) {
+                // Cast the spinner collapsed item (non-popup item) as a text view
+                TextView tv = (TextView) super.getView(position, convertView, parent);
+
+                // Set the text color of spinner item
+                tv.setText(lignesArray[position].split("_____")[0]);
+                tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
+                tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
+
+                // Return the view
+                return tv;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View v = convertView;
+                if (v == null) {
+                    LayoutInflater vi = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    v = vi.inflate(R.layout.ligne_item_spinner, null);
+                }
+
+                TextView tv = (TextView) v.findViewById(R.id.ligneItem);
+                tv.setText(lignesArray[position].split("_____")[0]);
+                tv.setBackgroundColor(Color.parseColor("#" + lignesArray[position].split("_____")[1]));
+                tv.setTextColor(Color.parseColor("#" + lignesArray[position].split("_____")[2]));
+                return v;
+            }
+        });
+    }
     /**
      * Créer une boite de dialogue pour renseigner la date
      */
-    public void createDialogDatePicker(View v) {
-        LayoutInflater li = LayoutInflater.from(getContext());
+    public void createDialogDatePicker() {
+        LayoutInflater li = LayoutInflater.from(this.getContext());
         View promptsView = li.inflate(R.layout.date_picker, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
         alertDialogBuilder.setView(promptsView);
-        final TextView dateView = getView().findViewById(R.id.dateView);
-        int jour = Integer.parseInt(dateView.getText().toString().split("/")[0]);
-        int mois = Integer.parseInt(dateView.getText().toString().split("/")[1]);
-        int annee = Integer.parseInt(dateView.getText().toString().split("/")[2]);
+        int jour = Integer.parseInt(date.getText().toString().split("/")[0]);
+        int mois = Integer.parseInt(date.getText().toString().split("/")[1]);
+        int annee = Integer.parseInt(date.getText().toString().split("/")[2]);
         final DatePicker dp = promptsView.findViewById(R.id.datePicker);
         dp.updateDate(annee, mois - 1, jour);
         alertDialogBuilder
@@ -171,7 +237,12 @@ public class DateFragment extends Fragment {
                 .setPositiveButton("OK",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                dateView.setText(dp.getDayOfMonth() + "/" + (dp.getMonth() + 1) + "/" + dp.getYear());
+                                String day, month;
+                                if(dp.getDayOfMonth() < 10)
+                                    day = "0"+dp.getDayOfMonth();
+                                else
+                                    day = ""+dp.getDayOfMonth();
+                                mCallback.refreshDateFragmentDate(day + "/" + dp.getMonth()+1+ "/" + dp.getYear());
                             }
                         })
                 //L'arc n'a pas d'étiquette
@@ -189,14 +260,13 @@ public class DateFragment extends Fragment {
     /**
      * Créer une boite de dialogue pour renseigner l'heure
      */
-    public void createDialogTimePicker(View v) {
+    public void createDialogTimePicker() {
         LayoutInflater li = LayoutInflater.from(getContext());
         View promptsView = li.inflate(R.layout.time_picker, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
         alertDialogBuilder.setView(promptsView);
-        final TextView timeView = getView().findViewById(R.id.timeView);
-        int heure = Integer.parseInt(timeView.getText().toString().split(":")[0]);
-        int minutes = Integer.parseInt(timeView.getText().toString().split(":")[1]);
+        int heure = Integer.parseInt(time.getText().toString().split(":")[0]);
+        int minutes = Integer.parseInt(time.getText().toString().split(":")[1]);
         final TimePicker tp = promptsView.findViewById(R.id.timePicker);
         tp.setHour(heure);
         tp.setMinute(minutes);
@@ -206,7 +276,16 @@ public class DateFragment extends Fragment {
                 .setPositiveButton("OK",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                timeView.setText(tp.getHour() + ":" + tp.getMinute());
+                                String hour, minutes;
+                                if(tp.getHour() < 10)
+                                    hour = "0"+tp.getHour();
+                                else
+                                    hour = ""+tp.getHour();
+                                if(tp.getMinute() < 10)
+                                    minutes = "0"+tp.getMinute();
+                                else
+                                    minutes = ""+tp.getMinute();
+                                mCallback.refreshDateFragmentTime(hour+ ":" + minutes);
                             }
                         })
                 //L'arc n'a pas d'étiquette
@@ -219,6 +298,4 @@ public class DateFragment extends Fragment {
         AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
     }
-
-
 }
